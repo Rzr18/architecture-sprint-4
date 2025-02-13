@@ -47,6 +47,7 @@ Rel(crmApi, shopDb, "JDBC")
 Rel(crmApi, messagesQueue, "AMQP (status updates)")
 Rel(operator, mes, "Uses MES")
 Rel(mes, mesApi, "HTTP/JSON")
+Rel(apiUser, mesApi, "HTTP/JSON")
 Rel(mesApi, mesDb, "JDBC")
 Rel(mesApi, messagesQueue, "AMQP")
 
