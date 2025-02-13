@@ -1,0 +1,62 @@
+@startuml C4_JewelryStoreSystem_Logging
+!include https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+
+skinparam componentStyle rectangle
+skinparam rectangle {
+  BackgroundColor #EBEBEB
+  BorderColor gray
+}
+
+
+LAYOUT_LEFT_RIGHT()
+title C4 Diagram with Logging
+
+Person_Ext(customer, "Customer", "B2C user")
+Person_Ext(apiUser, "API user", "B2B user")
+Person(seller, "Seller", "CRM user")
+Person(operator, "Operator", "MES user")
+
+System_Boundary(jewelrySystem, "Jewelry Store System") {
+  Container(internetShop, "Internet Shop", "Vue", "B2C UI")
+  Container(shopApi, "Shop API", "SpringBoot", "Handles orders, 3D files")
+  ContainerDb(shopDb, "Shop DB", "PostgreSQL", "Main shop data")
+
+  Container(crm, "CRM", "Vue", "Used by sellers")
+  Container(crmApi, "CRM API", "SpringBoot", "Order mgmt")
+  
+  Container(mes, "MES", "React", "Used by operators")
+  Container(mesApi, "MES API", "C#", "Manufacturing mgmt")
+  ContainerDb(mesDb, "MES DB", "PostgreSQL", "MES data")
+
+  Container(messagesQueue, "Messages Queue", "RabbitMQ", "Message broker")
+  Container(storage3D, "3D storage", "S3", "Files")
+
+  ' Новые лог-компоненты
+  Container_Ext(logCollector, "Log Collector", "Logstash", "Collects logs") #green
+  Container_Ext(logStore, "Logs Storage", "Elasticsearch", "Stores logs") #green
+  Container_Ext(logUI, "Log UI", "Kibana", "UI logs") #green
+}
+
+' Связи
+Rel(customer, internetShop, "Uses Shop")
+Rel(internetShop, shopApi, "HTTP/JSON")
+Rel(shopApi, shopDb, "JDBC")
+Rel(seller, crm, "Uses CRM")
+Rel(crm, crmApi, "HTTP/JSON")
+Rel(crmApi, shopDb, "JDBC")
+Rel(crmApi, messagesQueue, "AMQP (status updates)")
+Rel(operator, mes, "Uses MES")
+Rel(mes, mesApi, "HTTP/JSON")
+Rel(mesApi, mesDb, "JDBC")
+Rel(mesApi, messagesQueue, "AMQP")
+
+' Логирование - каждый сервис отсылает логи в collector
+Rel(shopApi, logCollector, "Sends logs") 
+Rel(crmApi, logCollector, "Sends logs") 
+Rel(mesApi, logCollector, "Sends logs") 
+Rel(messagesQueue, logCollector, "Sends logs") 
+
+Rel(logCollector, logStore, "Aggregates logs") 
+Rel(logUI, logStore, "Queries logs") 
+
+@enduml
