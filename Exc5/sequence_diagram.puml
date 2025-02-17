@@ -1,0 +1,39 @@
+@startuml
+
+title MES Caching (Cache-Aside) - Sequence Diagram
+
+actor Operator as OP
+participant "MES UI" as UI
+participant "MSG_BR" as MSGBR
+participant "MES API" as API
+participant "CACHE" as CACHE #green
+participant "MES DB" as DB
+
+== Чтение списка заказов ==
+OP -> UI: Открывает страницу заказов
+UI -> API: HTTP request listOrders(user)
+API -> CACHE: Проверяем наличие кэша
+alt Нет данных (cache miss)
+    API -> DB: Обращение в БД
+    DB --> API: Список заказов
+    API -> CACHE: Записать список в кеш
+end
+API --> UI: Возвращаем список заказов (JSON)
+
+== Обновление статуса из UI==
+OP -> UI: Изменение статуса
+UI -> API: POST setOrder(user, order)
+API -> CACHE: Обновление статуса в кэше
+CACHE -> DB: Обновление статуса в БД 
+DB --> CACHE: OK
+CACHE --> API: OK
+API --> UI: OK
+
+
+== Обновление статуса из брокера==
+MSGBR-> API: Запрос на изменение
+API -> CACHE: Обновление статуса в кэше
+API -> DB: Обновление статуса в БД 
+API --> MSGBR: OK
+
+@enduml
