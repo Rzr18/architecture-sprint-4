@@ -4,6 +4,7 @@ title MES Caching (Cache-Aside) - Sequence Diagram
 
 actor Operator as OP
 participant "MES UI" as UI
+participant "MSG_BR" as MSGBR
 participant "MES API" as API
 participant "CACHE" as CACHE #green
 participant "MES DB" as DB
@@ -19,12 +20,20 @@ alt Нет данных (cache miss)
 end
 API --> UI: Возвращаем список заказов (JSON)
 
-== Обновление статуса ==
+== Обновление статуса из UI==
 OP -> UI: Изменение статуса
 UI -> API: POST setOrder(user, order)
-API -> DB: Обновление статуса в БД 
-DB --> API: OK
-API -> CACHE: Инвалидируем кэш
+API -> CACHE: Обновление статуса в кэше
+CACHE -> DB: Обновление статуса в БД 
+DB --> CACHE: OK
+CACHE --> API: OK
 API --> UI: OK
+
+
+== Обновление статуса из брокера==
+MSGBR-> API: Запрос на изменение
+API -> CACHE: Обновление статуса в кэше
+API -> DB: Обновление статуса в БД 
+API --> MSGBR: OK
 
 @enduml
